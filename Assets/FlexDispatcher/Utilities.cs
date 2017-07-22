@@ -34,9 +34,10 @@ namespace FlexFramework.EventSystem
         {
             var obj = Expression.Parameter(typeof(object), "target");
             var parameters = method.GetParameters();
-            var values = parameters.Select(p => Expression.Parameter(typeof(object), p.Name)).ToArray();
-            var body = Expression.Call(Expression.Convert(obj, method.DeclaringType), method, values.Select((v, i) => Expression.Convert(values[i], parameters[i].ParameterType)).ToArray());
-            var @delegate = Expression.Lambda<Action<object, object[]>>(body, new[] { obj }.Concat(values)).Compile();
+            var array = Expression.Parameter(typeof(object[]), "args");
+            var converted = parameters.Select(p => Expression.Convert(Expression.ArrayIndex(array, Expression.Constant(p.Position)), p.ParameterType)).ToArray();
+            var body = Expression.Call(Expression.Convert(obj, method.DeclaringType), method, converted);
+            var @delegate = Expression.Lambda<Action<object, object[]>>(body, obj, array).Compile();
             return args => @delegate(target, args);
         }
 
@@ -44,9 +45,10 @@ namespace FlexFramework.EventSystem
         {
             var obj = Expression.Parameter(typeof(object), "target");
             var parameters = method.GetParameters();
-            var values = parameters.Select(p => Expression.Parameter(typeof(object), p.Name)).ToArray();
-            var body = Expression.Call(Expression.Convert(obj, method.DeclaringType), method, values.Select((v, i) => Expression.Convert(values[i], parameters[i].ParameterType)).ToArray());
-            var @delegate = Expression.Lambda<Func<object, object[], IEnumerator>>(body, new[] { obj }.Concat(values)).Compile();
+            var array = Expression.Parameter(typeof(object[]), "args");
+            var converted = parameters.Select(p => Expression.Convert(Expression.ArrayIndex(array, Expression.Constant(p.Position)), p.ParameterType)).ToArray();
+            var body = Expression.Call(Expression.Convert(obj, method.DeclaringType), method, converted);
+            var @delegate = Expression.Lambda<Func<object, object[], IEnumerator>>(body, obj, array).Compile();
             return args => @delegate(target, args);
         }
 #endif
